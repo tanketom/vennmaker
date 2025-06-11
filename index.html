@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Venn Me!</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/venn.js@0.2.20/venn.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #venn { margin-top: 30px; }
+    textarea { width: 100%; height: 60px; }
+    button { margin-top: 10px; padding: 10px 20px; font-size: 16px; margin-right: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Venn Me!</h1>
+  <p>Type words in brackets like: <code>[what] [the] [heck]</code></p>
+  <textarea id="inputText" placeholder="[word1] [word2] [word3]"></textarea>
+  <br/>
+  <button onclick="generateVenn()">Venn me!</button>
+  <button onclick="downloadVenn()">Download Venn as image</button>
+  <div id="venn"></div>
+
+  <script>
+    function generateVenn() {
+      const input = document.getElementById("inputText").value;
+      const matches = [...input.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]);
+
+      if (matches.length < 2 || matches.length > 3) {
+        alert("Please enter 2 or 3 words in brackets.");
+        return;
+      }
+
+      const sets = matches.map((word, i) => ({
+        sets: [word],
+        size: 10
+      }));
+
+      // Add intersections
+      if (matches.length === 2) {
+        sets.push({ sets: [matches[0], matches[1]], size: 5 });
+      } else if (matches.length === 3) {
+        sets.push({ sets: [matches[0], matches[1]], size: 5 });
+        sets.push({ sets: [matches[0], matches[2]], size: 5 });
+        sets.push({ sets: [matches[1], matches[2]], size: 5 });
+        sets.push({ sets: [matches[0], matches[1], matches[2]], size: 2 });
+      }
+
+      d3.select("#venn").datum(sets).call(venn.VennDiagram());
+    }
+
+    function downloadVenn() {
+      const svg = document.querySelector("#venn svg");
+      if (!svg) {
+        alert("Please generate a Venn diagram first.");
+        return;
+      }
+
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new Image();
+
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = function () {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = "venn-diagram.png";
+        downloadLink.click();
+      };
+
+      img.src = url;
+    }
+  </script>
+</body>
+</html>
