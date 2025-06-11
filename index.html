@@ -15,7 +15,7 @@
 </head>
 <body>
   <h1>Venn Me!</h1>
-  <p>Type words in brackets like: <code>[what] [the] [heck]</code></p>
+  <p>Type words in brackets like: <code>[call] [me] [maybe]</code></p>
   <textarea id="inputText" placeholder="[word1] [word2] [word3]"></textarea>
   <br/>
   <button onclick="generateVenn()">Venn me!</button>
@@ -32,22 +32,43 @@
         return;
       }
 
-      const sets = matches.map((word, i) => ({
-        sets: [word],
-        size: 10
-      }));
+      const sets = [];
+      const labels = {};
 
-      // Add intersections
-      if (matches.length === 2) {
-        sets.push({ sets: [matches[0], matches[1]], size: 5 });
-      } else if (matches.length === 3) {
-        sets.push({ sets: [matches[0], matches[1]], size: 5 });
-        sets.push({ sets: [matches[0], matches[2]], size: 5 });
-        sets.push({ sets: [matches[1], matches[2]], size: 5 });
-        sets.push({ sets: [matches[0], matches[1], matches[2]], size: 2 });
+      // Single sets
+      matches.forEach(word => {
+        sets.push({ sets: [word], size: 10 });
+        labels[word] = word;
+      });
+
+      // Pairwise combinations
+      for (let i = 0; i < matches.length; i++) {
+        for (let j = i + 1; j < matches.length; j++) {
+          const combo = [matches[i], matches[j]];
+          const label = combo.join(" ");
+          sets.push({ sets: combo, size: 5 });
+          labels[combo.join(",")] = label;
+        }
       }
 
-      d3.select("#venn").datum(sets).call(venn.VennDiagram());
+      // Triple combination
+      if (matches.length === 3) {
+        const combo = [matches[0], matches[1], matches[2]];
+        const label = combo.join(" ");
+        sets.push({ sets: combo, size: 2 });
+        labels[combo.join(",")] = label;
+      }
+
+      const chart = venn.VennDiagram();
+      d3.select("#venn").datum(sets).call(chart);
+
+      // Add labels to intersections
+      d3.selectAll("#venn text").each(function(d) {
+        const key = d.sets.join(",");
+        if (labels[key]) {
+          d3.select(this).text(labels[key]);
+        }
+      });
     }
 
     function downloadVenn() {
